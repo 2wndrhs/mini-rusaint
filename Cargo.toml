@@ -2,6 +2,8 @@
 name = "mini-rusaint"
 version = "0.1.0"
 edition = "2021"
+license = "mini-rusaint"
+authors = ["JOONGGON LEE <2wndrhs@gmail.com>"]
 
 [dependencies]
 tokio = { version = "1", features = ["full"] }
