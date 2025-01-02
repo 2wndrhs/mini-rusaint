@@ -1,4 +1,4 @@
-use mini_rusaint::session::USaintSession;
+use mini_rusaint::{session::USaintSession, webdynpro::event};
 
 const SSU_WEBDYNPRO_BASE_URL: &str =
     "https://ecc.ssu.ac.kr/sap/bc/webdynpro/SAP/ZCMB3W0017?sap-wd-stableids=x";
@@ -22,4 +22,9 @@ async fn main() {
         .expect("응답 본문을 읽는데 실패했습니다.");
 
     println!("{}", body);
+
+    // let encoded = "Form_Submit~E002Id~E004SL__FORM~E003~E002ClientAction~E004submit~E005ActionUrl~E004~E005ResponseData~E004full~E005PrepareScript~E004~E003~E002~E003";
+    // let decoded = event::decode_sap_event_encoding(&encoded);
+
+    // println!("{}", decoded);
 }

@@ -1,14 +1,26 @@
-use std::env;
+use std::{env, sync::Arc};
 
 use dotenv::dotenv;
 use reqwest::{
-    header::{self, HeaderMap, HeaderValue, USER_AGENT},
-    Client, Result as ReqwestResult,
+    cookie::{CookieStore, Jar},
+    header::{HeaderMap, HeaderValue, USER_AGENT},
+    Client, Error as ReqwestError, Response, Result as ReqwestResult, Url,
 };
+use thiserror::Error;
 
-const SMARTID_LOGIN_FORM_REQUEST_URL: &str = "https://smartid.ssu.ac.kr/Symtra_sso/smln_pcs.asp";
-const USAINT_SAP_SSO_URL: &str = "https://saint.ssu.ac.kr/webSSO/sso.jsp";
+const SAP_LOGIN_FORM_REQUEST_URL: &str =
+    "https://hana-prd-ap-4.ssu.ac.kr:8443/sap/bc/webdynpro/sap";
 const DEFAULT_USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36";
+
+#[derive(Debug, Error)]
+pub enum USaintSessionError {
+    #[error("횐경 변수 오류: {0}")]
+    EnvVarError(#[from] env::VarError),
+    #[error("HTTP 요청 오류: {0}")]
+    RequestError(#[from] ReqwestError),
+    #[error("MYSAPSSO2 쿠키가 존재하지 않습니다.")]
+    MissingMYSAPSSO2Cookie,
+}
 
 #[derive(Debug)]
 struct Credentials {
@@ -17,12 +29,12 @@ struct Credentials {
 }
 
 impl Credentials {
-    fn from_env() -> Credentials {
+    fn from_env() -> Result<Credentials, USaintSessionError> {
         dotenv().ok();
-        Credentials {
-            id: env::var("USAINT_ID").expect("USAINT_ID가 설정되어야 합니다."),
-            password: env::var("USAINT_PASSWORD").expect("USAINT_PASSWORD가 설정되어야 합니다."),
-        }
+        Ok(Credentials {
+            id: env::var("USAINT_ID")?,
+            password: env::var("USAINT_PASSWORD")?,
+        })
     }
 }
 
@@ -31,56 +43,52 @@ pub struct USaintSession {
 }
 
 impl USaintSession {
-    pub async fn new() -> ReqwestResult<Self> {
-        let credentials = Credentials::from_env();
+    pub async fn new() -> Result<Self, USaintSessionError> {
+        let credentials = Credentials::from_env()?;
 
         // 기본 헤더 설정
         let mut headers = HeaderMap::new();
         headers.insert(USER_AGENT, HeaderValue::from_static(DEFAULT_USER_AGENT));
 
+        let cookie_store = Arc::new(Jar::default());
         let client = Client::builder()
             .default_headers(headers)
-            .cookie_store(true)
+            .cookie_provider(cookie_store.clone())
             .build()?;
 
-        let s_token = Self::fetch_s_token(&client, &credentials).await?;
-        println!("s_token: {}", s_token);
+        // SAP SSO 토큰 발급
+        Self::fetch_sso_token(&client, &credentials).await?;
 
-        let sso_token = Self::fetch_sso_token(&client, &s_token, &credentials.id).await?;
-        println!("sso_token: {}", sso_token);
+        // 쿠키 저장소에 "MYSAPSSO2" 쿠키가 있는지 확인
+        let parsed_url = Url::parse(SAP_LOGIN_FORM_REQUEST_URL).unwrap();
+        match cookie_store.cookies(&parsed_url) {
+            Some(cookie) => {
+                if cookie.to_str().unwrap().contains("MYSAPSSO2") {
+                    return Ok(USaintSession { client });
+                }
 
-        Ok(USaintSession { client })
+                return Err(USaintSessionError::MissingMYSAPSSO2Cookie);
+            }
+            None => Err(USaintSessionError::MissingMYSAPSSO2Cookie),
+        }
     }
 
-    async fn fetch_s_token(client: &Client, credentials: &Credentials) -> ReqwestResult<String> {
-        let form_data = [("userid", &credentials.id), ("pwd", &credentials.password)];
+    async fn fetch_sso_token(
+        client: &Client,
+        credentials: &Credentials,
+    ) -> ReqwestResult<Response> {
+        let form_data = [
+            ("sap-user", credentials.id.as_str()),
+            ("sap-password", credentials.password.as_str()),
+            ("sap-system-login", "onLogin"),
+        ];
 
         let response = client
-            .post(SMARTID_LOGIN_FORM_REQUEST_URL)
+            .post(SAP_LOGIN_FORM_REQUEST_URL)
             .form(&form_data)
             .send()
             .await?;
 
-        let s_token = response
-            .cookies()
-            .find(|cookie| cookie.name() == "sToken")
-            .expect("sToken 쿠키가 없습니다.");
-
-        Ok(s_token.value().to_string())
-    }
-
-    async fn fetch_sso_token(client: &Client, s_token: &str, id: &str) -> ReqwestResult<String> {
-        let response = client
-            .get(USAINT_SAP_SSO_URL)
-            .query(&[("sToken", s_token), ("sIdno", id)])
-            .send()
-            .await?;
-
-        let sso_token = response
-            .cookies()
-            .find(|cookie| cookie.name() == "MYSAPSSO2")
-            .expect("MYSAPSSO2 쿠키가 없습니다.");
-
-        Ok(sso_token.value().to_string())
+        Ok(response)
     }
 }
