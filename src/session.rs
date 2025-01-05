@@ -39,11 +39,12 @@ impl Credentials {
 }
 
 pub struct USaintSession {
-    pub client: Client,
+    pub client: Arc<Client>,
 }
 
 impl USaintSession {
     pub async fn new() -> Result<Self, USaintSessionError> {
+        // env 파일에서 유세인트 사용자 정보 획득
         let credentials = Credentials::from_env()?;
 
         // 기본 헤더 설정
@@ -64,7 +65,9 @@ impl USaintSession {
         match cookie_store.cookies(&parsed_url) {
             Some(cookie) => {
                 if cookie.to_str().unwrap().contains("MYSAPSSO2") {
-                    return Ok(USaintSession { client });
+                    return Ok(USaintSession {
+                        client: Arc::new(client),
+                    });
                 }
 
                 return Err(USaintSessionError::MissingMYSAPSSO2Cookie);

@@ -1,10 +1,8 @@
+use std::sync::Arc;
+
+use reqwest::Client;
 use scraper::{Html, Selector};
 use thiserror::Error;
-
-use crate::session::USaintSession;
-
-const SSU_WEBDYNPRO_BASE_URL: &str =
-    "https://ecc.ssu.ac.kr/sap/bc/webdynpro/SAP/ZCMB3W0017?sap-wd-stableids=x";
 
 #[derive(Debug, Error)]
 pub enum SapSsrClientError {
@@ -14,16 +12,27 @@ pub enum SapSsrClientError {
 
 #[derive(Debug)]
 pub struct SapSsrClient {
-    action_url: String,
-    charset: String,
-    wd_secure_id: String,
-    app_name: String,
-    use_beacon: bool,
+    pub action_url: String,
+    pub charset: String,
+    pub wd_secure_id: String,
+    pub app_name: String,
+    pub use_beacon: bool,
 }
 
 impl SapSsrClient {
-    pub async fn new(session: USaintSession) -> Result<SapSsrClient, SapSsrClientError> {
-        let response = session.client.get(SSU_WEBDYNPRO_BASE_URL).send().await?;
+    pub const SSU_WEBDYNPRO_BASE_URL: &'static str = "https://ecc.ssu.ac.kr";
+
+    pub async fn new(
+        client: Arc<Client>,
+        app_name: &str,
+    ) -> Result<SapSsrClient, SapSsrClientError> {
+        let url = format!(
+            "{}/sap/bc/webdynpro/SAP/{}?sap-wd-stableids=x",
+            Self::SSU_WEBDYNPRO_BASE_URL,
+            app_name
+        );
+
+        let response = client.get(url).send().await?;
 
         let body = response.text().await?;
 
