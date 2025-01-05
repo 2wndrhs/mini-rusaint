@@ -31,6 +31,8 @@ impl CourseGradesApplication {
 
     const SEMESTER_GRADES_SUMMARY_TABLE_ID: &'static str =
         "ZCMB3W0017.ID_0001:VIW_MAIN.TABLE-contentTBody";
+    const SEMESTER_GRADES_DETAIL_TABLE_ID: &'static str =
+        "ZCMB3W0017.ID_0001:VIW_MAIN.TABLE_1-contentTBody";
     const YEAR_COMBO_BOX_ID: &'static str =
         "ZCMW_PERIOD_RE.ID_0DC742680F42DA9747594D1AE51A0C69:VIW_MAIN.PERYR";
     const SEMESTER_COMBO_BOX_ID: &'static str =
@@ -125,9 +127,34 @@ impl CourseGradesApplication {
         let response = self.select_semester(semester).await?;
         let body = response.text().await?;
 
-        println!("{}", body);
+        // HTML 문자열 파싱
+        let document = Html::parse_document(&body);
+        // 학기별 세부 성적 테이블 선택자
+        let tbody_selector = Selector::parse(
+            format!(r#"[id="{}"]"#, Self::SEMESTER_GRADES_DETAIL_TABLE_ID).as_str(),
+        )
+        .unwrap();
 
-        todo!()
+        let mut course_grades = Vec::new();
+
+        for tbody_element in document.select(&tbody_selector) {
+            // tbody 요소의 한 단계 아래에 있는 tr 요소들을 순회
+            for (index, child) in tbody_element.children().enumerate() {
+                // 첫 번째 tr 요소는 테이블 헤더이므로 스킵
+                if index == 0 {
+                    continue;
+                }
+
+                if let Some(element) = ElementRef::wrap(child) {
+                    if element.value().name() == "tr" {
+                        let course_grade = CourseGrade::from_html_element(element);
+                        course_grades.push(course_grade);
+                    }
+                }
+            }
+        }
+
+        Ok(course_grades)
     }
 
     /// 주어진 년도를 선택하는 SAP 이벤트를 발행하고 응답을 반환합니다.

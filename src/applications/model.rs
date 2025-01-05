@@ -115,3 +115,35 @@ pub struct CourseGrade {
     pub remarks: String,                              // 비고
     pub course_code: String,                          // 과목코드
 }
+
+impl CourseGrade {
+    pub fn from_html_element(tr_element: scraper::ElementRef) -> CourseGrade {
+        let td_selector = scraper::Selector::parse("td").unwrap();
+        // 첫 번째 td 요소는 라디오 버튼이므로 skip(1)을 사용하여 제외
+        let td_elements: Vec<_> = tr_element.select(&td_selector).skip(1).collect();
+
+        let grade = td_elements[0].text().collect::<String>().trim().to_string();
+        let rating = td_elements[1].text().collect::<String>().trim().to_string();
+        let course_name = td_elements[2].text().collect::<String>().trim().to_string();
+
+        let detailed_grade = None;
+
+        let course_credits_text = td_elements[4].text().collect::<String>();
+        let course_credits = course_credits_text.trim().parse().unwrap();
+
+        let professor_name = td_elements[5].text().collect::<String>().trim().to_string();
+        let remarks = td_elements[6].text().collect::<String>().trim().to_string();
+        let course_code = td_elements[7].text().collect::<String>().trim().to_string();
+
+        CourseGrade {
+            grade,
+            rating,
+            course_name,
+            detailed_grade,
+            course_credits,
+            professor_name,
+            remarks,
+            course_code,
+        }
+    }
+}
