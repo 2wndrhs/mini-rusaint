@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+
+// 학기별 성적
 #[derive(Debug)]
 pub struct SemesterGrade {
     pub year: u32,                 // 학년도
@@ -78,4 +81,25 @@ impl SemesterGrade {
             flunked,
         }
     }
+}
+
+#[derive(Debug)]
+pub enum SemesterType {
+    FirstSemester,
+    SecondSemester,
+    SummerSemester,
+    WinterSemester,
+}
+
+// 과목별 성적
+#[derive(Debug)]
+pub struct CourseGrade {
+    pub grade: String,                                // 성적
+    pub rating: String,                               // 등급
+    pub course_name: String,                          // 과목명
+    pub detailed_grade: Option<HashMap<String, f32>>, // 상세성적
+    pub course_credits: f32,                          // 과목학점
+    pub professor_name: String,                       // 교수명
+    pub remarks: String,                              // 비고
+    pub course_code: String,                          // 과목코드
 }

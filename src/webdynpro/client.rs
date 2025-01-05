@@ -33,7 +33,6 @@ impl SapSsrClient {
         );
 
         let response = client.get(url).send().await?;
-
         let body = response.text().await?;
 
         // HTML 문자열 파싱
