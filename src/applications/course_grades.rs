@@ -29,6 +29,13 @@ pub struct CourseGradesApplication {
 impl CourseGradesApplication {
     pub const APP_NAME: &'static str = "ZCMB3W0017";
 
+    const SEMESTER_GRADES_SUMMARY_TABLE_ID: &'static str =
+        "ZCMB3W0017.ID_0001:VIW_MAIN.TABLE-contentTBody";
+    const YEAR_COMBO_BOX_ID: &'static str =
+        "ZCMW_PERIOD_RE.ID_0DC742680F42DA9747594D1AE51A0C69:VIW_MAIN.PERYR";
+    const SEMESTER_COMBO_BOX_ID: &'static str =
+        "ZCMW_PERIOD_RE.ID_0DC742680F42DA9747594D1AE51A0C69:VIW_MAIN.PERID";
+
     pub async fn new(
         client: Arc<Client>,
     ) -> Result<CourseGradesApplication, CourseGradesApplicationError> {
@@ -74,18 +81,16 @@ impl CourseGradesApplication {
     pub async fn get_all_semester_grades(
         &self,
     ) -> Result<Vec<SemesterGrade>, CourseGradesApplicationError> {
-        const SEMESTER_GRADES_SUMMARY_TABLE_ID: &'static str =
-            "ZCMB3W0017.ID_0001:VIW_MAIN.TABLE-contentTBody";
-
         let response = self.send_request(None).await?;
         let body = response.text().await?;
 
         // HTML 문자열 파싱
         let document = Html::parse_document(&body);
         // 학기별 성적 테이블 선택자
-        let tbody_selector =
-            Selector::parse(format!(r#"[id="{}"]"#, SEMESTER_GRADES_SUMMARY_TABLE_ID).as_str())
-                .unwrap();
+        let tbody_selector = Selector::parse(
+            format!(r#"[id="{}"]"#, Self::SEMESTER_GRADES_SUMMARY_TABLE_ID).as_str(),
+        )
+        .unwrap();
 
         let mut semester_grades = Vec::new();
 
@@ -115,7 +120,9 @@ impl CourseGradesApplication {
         year: u32,
         semester: SemesterType,
     ) -> Result<Vec<CourseGrade>, CourseGradesApplicationError> {
-        let response = self.select_year(year).await?;
+        self.select_year(year).await?;
+
+        let response = self.select_semester(semester).await?;
         let body = response.text().await?;
 
         println!("{}", body);
@@ -123,15 +130,33 @@ impl CourseGradesApplication {
         todo!()
     }
 
+    /// 주어진 년도를 선택하는 SAP 이벤트를 발행하고 응답을 반환합니다.
     async fn select_year(&self, year: u32) -> Result<Response, CourseGradesApplicationError> {
-        const YEAR_COMBO_BOX_ID: &'static str =
-            "ZCMW_PERIOD_RE.ID_0DC742680F42DA9747594D1AE51A0C69:VIW_MAIN.PERYR";
-
         let sap_event_queue = SapEventBuilder::default()
             .event("ComboBox")
             .control("Select")
-            .add_parameter(("Id".to_string(), YEAR_COMBO_BOX_ID.to_string()))
+            .add_parameter(("Id".to_string(), Self::YEAR_COMBO_BOX_ID.to_string()))
             .add_parameter(("Key".to_string(), year.to_string()))
+            .add_ucf_parameter(("ResponseData".to_string(), "delta".to_string()))
+            .add_ucf_parameter(("ClientAction".to_string(), "submit".to_string()))
+            .build()?
+            .to_string();
+
+        let response = self.send_request(Some(&sap_event_queue)).await?;
+
+        Ok(response)
+    }
+
+    /// 주어진 학기를 선택하는 SAP 이벤트를 발행하고 응답을 반환합니다.
+    async fn select_semester(
+        &self,
+        semester: SemesterType,
+    ) -> Result<Response, CourseGradesApplicationError> {
+        let sap_event_queue = SapEventBuilder::default()
+            .event("ComboBox")
+            .control("Select")
+            .add_parameter(("Id".to_string(), Self::SEMESTER_COMBO_BOX_ID.to_string()))
+            .add_parameter(("Key".to_string(), semester.key().to_string()))
             .add_ucf_parameter(("ResponseData".to_string(), "delta".to_string()))
             .add_ucf_parameter(("ClientAction".to_string(), "submit".to_string()))
             .build()?

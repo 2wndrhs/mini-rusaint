@@ -86,9 +86,21 @@ impl SemesterGrade {
 #[derive(Debug)]
 pub enum SemesterType {
     FirstSemester,
-    SecondSemester,
     SummerSemester,
+    SecondSemester,
     WinterSemester,
+}
+
+impl SemesterType {
+    // sap 내부적으로 사용하는 학기에 대응하는 key
+    pub fn key(&self) -> &str {
+        match self {
+            SemesterType::FirstSemester => "090",
+            SemesterType::SummerSemester => "091",
+            SemesterType::SecondSemester => "092",
+            SemesterType::WinterSemester => "093",
+        }
+    }
 }
 
 // 과목별 성적
