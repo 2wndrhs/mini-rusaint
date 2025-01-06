@@ -105,7 +105,8 @@ impl CourseGradesApplication {
                 }
 
                 if let Some(element) = ElementRef::wrap(child) {
-                    if element.value().name() == "tr" {
+                    // tr 요소이고 rr 속성(row index)이 0이 아닌 경우에만 성적 정보를 가져옴
+                    if element.value().name() == "tr" && element.attr("rr") != Some("0") {
                         let semester_grade = SemesterGrade::from_html_element(element);
                         semester_grades.push(semester_grade);
                     }
