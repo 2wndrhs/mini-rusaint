@@ -106,14 +106,14 @@ impl SemesterType {
 // 과목별 성적
 #[derive(Debug)]
 pub struct CourseGrade {
-    pub grade: String,                                // 성적
-    pub rating: String,                               // 등급
-    pub course_name: String,                          // 과목명
-    pub detailed_grade: Option<HashMap<String, f32>>, // 상세성적
-    pub course_credits: f32,                          // 과목학점
-    pub professor_name: String,                       // 교수명
-    pub remarks: String,                              // 비고
-    pub course_code: String,                          // 과목코드
+    pub grade: String,                        // 성적
+    pub rating: String,                       // 등급
+    pub course_name: String,                  // 과목명
+    pub detailed_grade: HashMap<String, f32>, // 상세성적
+    pub course_credits: f32,                  // 과목학점
+    pub professor_name: String,               // 교수명
+    pub remarks: String,                      // 비고
+    pub course_code: String,                  // 과목코드
 }
 
 impl CourseGrade {
@@ -126,7 +126,7 @@ impl CourseGrade {
         let rating = td_elements[1].text().collect::<String>().trim().to_string();
         let course_name = td_elements[2].text().collect::<String>().trim().to_string();
 
-        let detailed_grade = None;
+        let detailed_grade = HashMap::new();
 
         let course_credits_text = td_elements[4].text().collect::<String>();
         let course_credits = course_credits_text.trim().parse().unwrap();
@@ -145,5 +145,33 @@ impl CourseGrade {
             remarks,
             course_code,
         }
+    }
+
+    pub fn create_detailed_grades(tbody_element: scraper::ElementRef) -> HashMap<String, f32> {
+        let mut detailed_grades = HashMap::new();
+
+        let key_table_row = tbody_element.children().nth(0).unwrap();
+        let value_table_row = tbody_element.children().nth(1).unwrap();
+
+        let key_elements: Vec<_> = key_table_row.children().skip(4).collect();
+        let value_elements: Vec<_> = value_table_row.children().skip(4).collect();
+
+        for (key_element, value_element) in key_elements.iter().zip(value_elements.iter()) {
+            let key_element_ref = scraper::ElementRef::wrap(*key_element).unwrap();
+            let value_element_ref = scraper::ElementRef::wrap(*value_element).unwrap();
+
+            let key = key_element_ref
+                .text()
+                .collect::<String>()
+                .trim()
+                .to_string();
+
+            let value_text = value_element_ref.text().collect::<String>();
+            let value = value_text.trim().parse().unwrap();
+
+            detailed_grades.insert(key, value);
+        }
+
+        detailed_grades
     }
 }

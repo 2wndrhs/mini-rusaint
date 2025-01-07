@@ -47,8 +47,12 @@ impl USaintSession {
         // env 파일에서 유세인트 사용자 정보 획득
         let credentials = Credentials::from_env()?;
 
+        println!("USAINT_ID: {}", credentials.id);
+        println!("USAINT_PASSWORD: {}", credentials.password);
+
         // 기본 헤더 설정
         let mut headers = HeaderMap::new();
+
         headers.insert(USER_AGENT, HeaderValue::from_static(DEFAULT_USER_AGENT));
 
         let cookie_store = Arc::new(Jar::default());
