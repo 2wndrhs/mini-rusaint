@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap,
+    collections::{HashMap, VecDeque},
     fmt::{Display, Formatter, Result as FmtResult},
 };
 
@@ -12,7 +12,7 @@ const SAP_ENCODED_CLOSE_BRACE: &str = "~E003";
 const SAP_ENCODED_COLON: &str = "~E004";
 const SAP_ENCODED_COMMA: &str = "~E005";
 
-#[derive(Debug, Builder)]
+#[derive(Debug, Builder, Clone)]
 #[builder(setter(into))]
 pub struct SapEvent {
     event: String,
@@ -61,6 +61,26 @@ impl Display for SapEvent {
             }
         }
         write!(f, "{}", SAP_ENCODED_CLOSE_BRACE)?;
+
+        Ok(())
+    }
+}
+
+#[derive(Debug, Builder)]
+pub struct SapEventQueue {
+    #[builder(setter(each = "add_event"))]
+    #[builder(default)]
+    queue: VecDeque<SapEvent>,
+}
+
+impl Display for SapEventQueue {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        for (i, event) in self.queue.iter().enumerate() {
+            write!(f, "{}", event)?;
+            if i < self.queue.len() - 1 {
+                write!(f, "{}", SAP_ENCODED_NEWLINE)?;
+            }
+        }
 
         Ok(())
     }
