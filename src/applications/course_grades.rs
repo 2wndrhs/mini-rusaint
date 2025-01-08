@@ -7,8 +7,7 @@ use thiserror::Error;
 use crate::webdynpro::{
     client::{SapSsrClient, SapSsrClientError},
     event::{
-        SapEventBuilder, SapEventBuilderError, SapEventQueue, SapEventQueueBuilder,
-        SapEventQueueBuilderError,
+        SapEventBuilder, SapEventBuilderError, SapEventQueueBuilder, SapEventQueueBuilderError,
     },
 };
 
@@ -109,12 +108,8 @@ impl CourseGradesApplication {
 
         for tbody_element in document.select(&tbody_selector) {
             // tbody 요소의 한 단계 아래에 있는 tr 요소들을 순회
-            for (index, child) in tbody_element.children().enumerate() {
-                // 첫 번째 tr 요소는 테이블 헤더이므로 스킵
-                if index == 0 {
-                    continue;
-                }
-
+            // 첫 번째 tr 요소는 테이블 헤더이므로 스킵
+            for child in tbody_element.children().skip(1) {
                 if let Some(element) = ElementRef::wrap(child) {
                     // tr 요소이고 rr 속성(row index)이 0이 아닌 경우에만 성적 정보를 가져옴
                     if element.value().name() == "tr" && element.attr("rr") != Some("0") {
@@ -153,17 +148,14 @@ impl CourseGradesApplication {
 
         for tbody_element in document.select(&tbody_selector) {
             // tbody 요소의 한 단계 아래에 있는 tr 요소들을 순회
-            for (index, child) in tbody_element.children().enumerate() {
-                // 첫 번째 tr 요소는 테이블 헤더이므로 스킵
-                if index == 0 {
-                    continue;
-                }
-
+            // 첫 번째 tr 요소는 테이블 헤더이므로 스킵
+            for child in tbody_element.children().skip(1) {
                 if let Some(element) = ElementRef::wrap(child) {
                     // tr 요소이고 rr 속성(row index)이 0이 아닌 경우에만 성적 정보를 가져옴
                     if element.value().name() == "tr" && element.attr("rr") != Some("0") {
                         let mut course_grade = CourseGrade::from_html_element(element);
 
+                        // `fetch_details` 값이 `true`이면 상세 성적을 함께 가져옴
                         if fetch_details {
                             let detailed_grades = self.get_course_grades_details(element).await?;
                             course_grade.detailed_grade = detailed_grades;
