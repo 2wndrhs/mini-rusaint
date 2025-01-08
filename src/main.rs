@@ -6,7 +6,7 @@ use mini_rusaint::{
 
 #[tokio::main]
 async fn main() {
-    let session = USaintSession::new()
+    let session = USaintSession::with_env()
         .await
         .expect("세션 생성에 실패했습니다.");
 

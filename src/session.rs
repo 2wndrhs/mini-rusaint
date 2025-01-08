@@ -29,6 +29,10 @@ struct Credentials {
 }
 
 impl Credentials {
+    fn new(id: String, password: String) -> Self {
+        Credentials { id, password }
+    }
+
     fn from_env() -> Result<Credentials, USaintSessionError> {
         dotenv().ok();
         Ok(Credentials {
@@ -43,10 +47,19 @@ pub struct USaintSession {
 }
 
 impl USaintSession {
-    pub async fn new() -> Result<Self, USaintSessionError> {
-        // env 파일에서 유세인트 사용자 정보 획득
-        let credentials = Credentials::from_env()?;
+    /// 주어진 유세인트 아이디와 비밀번호로 세션을 생성합니다.
+    pub async fn with_password(id: String, password: String) -> Result<Self, USaintSessionError> {
+        let credentials = Credentials::new(id, password);
+        Self::create_session(credentials).await
+    }
 
+    /// 환경 변수에서 유세인트 아이디와 비밀번호를 읽어 세션을 생성합니다
+    pub async fn with_env() -> Result<Self, USaintSessionError> {
+        let credentials = Credentials::from_env()?;
+        Self::create_session(credentials).await
+    }
+
+    async fn create_session(credentials: Credentials) -> Result<Self, USaintSessionError> {
         println!("USAINT_ID: {}", credentials.id);
         println!("USAINT_PASSWORD: {}", credentials.password);
 
@@ -66,18 +79,16 @@ impl USaintSession {
 
         // 쿠키 저장소에 "MYSAPSSO2" 쿠키가 있는지 확인
         let parsed_url = Url::parse(SAP_LOGIN_FORM_REQUEST_URL).unwrap();
-        match cookie_store.cookies(&parsed_url) {
-            Some(cookie) => {
-                if cookie.to_str().unwrap().contains("MYSAPSSO2") {
-                    return Ok(USaintSession {
-                        client: Arc::new(client),
-                    });
-                }
 
-                return Err(USaintSessionError::MissingMYSAPSSO2Cookie);
+        if let Some(cookie) = cookie_store.cookies(&parsed_url) {
+            if cookie.to_str().unwrap().contains("MYSAPSSO2") {
+                return Ok(USaintSession {
+                    client: Arc::new(client),
+                });
             }
-            None => Err(USaintSessionError::MissingMYSAPSSO2Cookie),
         }
+
+        Err(USaintSessionError::MissingMYSAPSSO2Cookie)
     }
 
     async fn fetch_sso_token(
