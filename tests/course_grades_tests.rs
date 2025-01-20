@@ -1,5 +1,5 @@
 use mini_rusaint::{
-    applications::{course_grades::CourseGradesApplication, model::SemesterType},
+    applications::course_grades::{model::SemesterType, CourseGradesApplication},
     session::USaintSession,
 };
 

@@ -1,3 +1,5 @@
+pub mod model;
+
 use std::{collections::HashMap, sync::Arc};
 
 use reqwest::{Client, Response};
@@ -5,16 +7,20 @@ use scraper::{ElementRef, Html, Selector};
 use thiserror::Error;
 
 use crate::webdynpro::{
-    client::{SapSsrClient, SapSsrClientError},
+    client::SapSsrClientError,
     event::{
         SapEventBuilder, SapEventBuilderError, SapEventQueueBuilder, SapEventQueueBuilderError,
     },
 };
 
-use super::model::{CourseGrade, SemesterGrade, SemesterType};
+use model::{CourseGrade, SemesterGrade, SemesterType};
+
+use super::{Application, ApplicationError};
 
 #[derive(Debug, Error)]
 pub enum CourseGradesApplicationError {
+    #[error("Application 오류: {0}")]
+    ApplicationError(#[from] ApplicationError),
     #[error("SAP SSR 클라이언트 생성 오류: {0}")]
     SapSsrClientError(#[from] SapSsrClientError),
     #[error("HTTP 요청 오류: {0}")]
@@ -28,8 +34,7 @@ pub enum CourseGradesApplicationError {
 }
 
 pub struct CourseGradesApplication {
-    client: Arc<Client>,
-    sap_ssr_client: SapSsrClient,
+    application: Application,
 }
 
 impl CourseGradesApplication {
@@ -51,49 +56,15 @@ impl CourseGradesApplication {
     pub async fn new(
         client: Arc<Client>,
     ) -> Result<CourseGradesApplication, CourseGradesApplicationError> {
-        // SAP SSR Client 정보 획득
-        let sap_ssr_client = SapSsrClient::new(client.clone(), Self::APP_NAME).await?;
-        Ok(CourseGradesApplication {
-            client,
-            sap_ssr_client,
-        })
-    }
-
-    async fn send_request(
-        &self,
-        sap_event_queue: Option<&str>,
-    ) -> Result<Response, CourseGradesApplicationError> {
-        let url = format!(
-            "{}/{}",
-            SapSsrClient::SSU_WEBDYNPRO_BASE_URL,
-            self.sap_ssr_client.action_url
-        );
-
-        let use_beacon_str = self.sap_ssr_client.use_beacon.to_string();
-        let mut form_data = vec![
-            ("charset", self.sap_ssr_client.charset.as_str()),
-            (
-                "sap-wd-secure-id",
-                self.sap_ssr_client.wd_secure_id.as_str(),
-            ),
-            ("fesrAppName", self.sap_ssr_client.app_name.as_str()),
-            ("fesrUseBeacon", use_beacon_str.as_str()),
-        ];
-
-        if let Some(event_queue) = sap_event_queue {
-            form_data.push(("SAPEVENTQUEUE", event_queue));
-        }
-
-        let response = self.client.post(&url).form(&form_data).send().await?;
-
-        Ok(response)
+        let application = Application::new(client, Self::APP_NAME).await?;
+        Ok(CourseGradesApplication { application })
     }
 
     /// 모든 학기별 성적을 가져옵니다.
     pub async fn get_all_semester_grades(
         &self,
     ) -> Result<Vec<SemesterGrade>, CourseGradesApplicationError> {
-        let response = self.send_request(None).await?;
+        let response = self.application.send_request(None).await?;
         let body = response.text().await?;
 
         // HTML 문자열 파싱
@@ -203,7 +174,10 @@ impl CourseGradesApplication {
                             .build()?
                             .to_string();
 
-                        let response = self.send_request(Some(&sap_event_queue)).await?;
+                        let response = self
+                            .application
+                            .send_request(Some(&sap_event_queue))
+                            .await?;
                         let body = response.text().await?;
 
                         // HTML 문자열 파싱
@@ -242,7 +216,10 @@ impl CourseGradesApplication {
             .build()?
             .to_string();
 
-        let response = self.send_request(Some(&sap_event_queue)).await?;
+        let response = self
+            .application
+            .send_request(Some(&sap_event_queue))
+            .await?;
 
         Ok(response)
     }
@@ -257,7 +234,10 @@ impl CourseGradesApplication {
             .build()?
             .to_string();
 
-        let response = self.send_request(Some(&sap_event_queue)).await?;
+        let response = self
+            .application
+            .send_request(Some(&sap_event_queue))
+            .await?;
 
         Ok(response)
     }
@@ -275,7 +255,10 @@ impl CourseGradesApplication {
             .build()?
             .to_string();
 
-        let response = self.send_request(Some(&sap_event_queue)).await?;
+        let response = self
+            .application
+            .send_request(Some(&sap_event_queue))
+            .await?;
 
         Ok(response)
     }
