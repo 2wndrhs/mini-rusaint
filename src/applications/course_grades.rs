@@ -1,6 +1,6 @@
 pub mod model;
 
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, ops::Deref, sync::Arc};
 
 use reqwest::{Client, Response};
 use scraper::{ElementRef, Html, Selector};
@@ -33,8 +33,14 @@ pub enum CourseGradesApplicationError {
     HtmlParseError,
 }
 
-pub struct CourseGradesApplication {
-    application: Application,
+pub struct CourseGradesApplication(Application);
+
+impl Deref for CourseGradesApplication {
+    type Target = Application;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 
 impl CourseGradesApplication {
@@ -57,14 +63,14 @@ impl CourseGradesApplication {
         client: Arc<Client>,
     ) -> Result<CourseGradesApplication, CourseGradesApplicationError> {
         let application = Application::new(client, Self::APP_NAME).await?;
-        Ok(CourseGradesApplication { application })
+        Ok(CourseGradesApplication(application))
     }
 
     /// 모든 학기별 성적을 가져옵니다.
     pub async fn get_all_semester_grades(
         &self,
     ) -> Result<Vec<SemesterGrade>, CourseGradesApplicationError> {
-        let response = self.application.send_request(None).await?;
+        let response = self.send_request(None).await?;
         let body = response.text().await?;
 
         // HTML 문자열 파싱
@@ -174,10 +180,7 @@ impl CourseGradesApplication {
                             .build()?
                             .to_string();
 
-                        let response = self
-                            .application
-                            .send_request(Some(&sap_event_queue))
-                            .await?;
+                        let response = self.send_request(Some(&sap_event_queue)).await?;
                         let body = response.text().await?;
 
                         // HTML 문자열 파싱
@@ -216,10 +219,7 @@ impl CourseGradesApplication {
             .build()?
             .to_string();
 
-        let response = self
-            .application
-            .send_request(Some(&sap_event_queue))
-            .await?;
+        let response = self.send_request(Some(&sap_event_queue)).await?;
 
         Ok(response)
     }
@@ -234,10 +234,7 @@ impl CourseGradesApplication {
             .build()?
             .to_string();
 
-        let response = self
-            .application
-            .send_request(Some(&sap_event_queue))
-            .await?;
+        let response = self.send_request(Some(&sap_event_queue)).await?;
 
         Ok(response)
     }
@@ -255,10 +252,7 @@ impl CourseGradesApplication {
             .build()?
             .to_string();
 
-        let response = self
-            .application
-            .send_request(Some(&sap_event_queue))
-            .await?;
+        let response = self.send_request(Some(&sap_event_queue)).await?;
 
         Ok(response)
     }
