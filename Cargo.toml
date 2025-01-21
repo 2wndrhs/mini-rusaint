@@ -1,5 +1,9 @@
 [workspace]
-members = ["packages/mini-rusaint"]
+members = [
+    "packages/mini-rusaint",
+    "packages/mini-rusaint-ffi",
+    "uniffi-bindgen",
+]
 resolver = "2"
 
 [workspace.package]
