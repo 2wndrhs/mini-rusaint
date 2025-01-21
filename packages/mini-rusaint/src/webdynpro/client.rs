@@ -1,8 +1,7 @@
-use std::sync::Arc;
-
-use reqwest::Client;
 use scraper::{Html, Selector};
 use thiserror::Error;
+
+use crate::session::USaintSession;
 
 #[derive(Debug, Error)]
 pub enum SapSsrClientError {
@@ -23,7 +22,7 @@ impl SapSsrClient {
     pub const SSU_WEBDYNPRO_BASE_URL: &'static str = "https://ecc.ssu.ac.kr";
 
     pub async fn new(
-        client: Arc<Client>,
+        session: USaintSession,
         app_name: &str,
     ) -> Result<SapSsrClient, SapSsrClientError> {
         let url = format!(
@@ -32,7 +31,7 @@ impl SapSsrClient {
             app_name
         );
 
-        let response = client.get(url).send().await?;
+        let response = session.get(url).send().await?;
         let body = response.text().await?;
 
         // HTML 문자열 파싱

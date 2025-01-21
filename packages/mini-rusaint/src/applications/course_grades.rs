@@ -1,15 +1,18 @@
 pub mod model;
 
-use std::{collections::HashMap, ops::Deref, sync::Arc};
+use std::{collections::HashMap, ops::Deref};
 
-use reqwest::{Client, Response};
+use reqwest::Response;
 use scraper::{ElementRef, Html, Selector};
 use thiserror::Error;
 
-use crate::webdynpro::{
-    client::SapSsrClientError,
-    event::{
-        SapEventBuilder, SapEventBuilderError, SapEventQueueBuilder, SapEventQueueBuilderError,
+use crate::{
+    session::USaintSession,
+    webdynpro::{
+        client::SapSsrClientError,
+        event::{
+            SapEventBuilder, SapEventBuilderError, SapEventQueueBuilder, SapEventQueueBuilderError,
+        },
     },
 };
 
@@ -60,9 +63,9 @@ impl CourseGradesApplication {
         "ZCMW_PERIOD_RE.ID_0DC742680F42DA9747594D1AE51A0C69:VIW_MAIN.PERID";
 
     pub async fn new(
-        client: Arc<Client>,
+        session: USaintSession,
     ) -> Result<CourseGradesApplication, CourseGradesApplicationError> {
-        let application = Application::new(client, Self::APP_NAME).await?;
+        let application = Application::new(session, Self::APP_NAME).await?;
         Ok(CourseGradesApplication(application))
     }
 

@@ -9,7 +9,7 @@ async fn test_get_all_semester_grades() {
         .await
         .expect("세션 생성에 실패했습니다.");
 
-    let course_grades_app = CourseGradesApplication::new(session.client.clone())
+    let course_grades_app = CourseGradesApplication::new(session)
         .await
         .expect("CourseGradesApplication 생성에 실패했습니다.");
 
@@ -30,7 +30,7 @@ async fn test_get_semester_grades_details() {
         .await
         .expect("세션 생성에 실패했습니다.");
 
-    let course_grades_app = CourseGradesApplication::new(session.client.clone())
+    let course_grades_app = CourseGradesApplication::new(session)
         .await
         .expect("CourseGradesApplication 생성에 실패했습니다.");
 

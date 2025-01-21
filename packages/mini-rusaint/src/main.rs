@@ -10,7 +10,7 @@ async fn main() {
         .await
         .expect("세션 생성에 실패했습니다.");
 
-    let course_grades_app = CourseGradesApplication::new(session.client.clone())
+    let course_grades_app = CourseGradesApplication::new(session)
         .await
         .expect("CourseGradesApplication 생성에 실패했습니다.");
 

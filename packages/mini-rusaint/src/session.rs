@@ -1,4 +1,4 @@
-use std::{env, sync::Arc};
+use std::{env, ops::Deref, sync::Arc};
 
 use dotenv::dotenv;
 use reqwest::{
@@ -42,8 +42,15 @@ impl Credentials {
     }
 }
 
-pub struct USaintSession {
-    pub client: Arc<Client>,
+#[derive(Clone)]
+pub struct USaintSession(Client);
+
+impl Deref for USaintSession {
+    type Target = Client;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 
 impl USaintSession {
@@ -82,9 +89,7 @@ impl USaintSession {
 
         if let Some(cookie) = cookie_store.cookies(&parsed_url) {
             if cookie.to_str().unwrap().contains("MYSAPSSO2") {
-                return Ok(USaintSession {
-                    client: Arc::new(client),
-                });
+                return Ok(USaintSession(client));
             }
         }
 

@@ -1,9 +1,10 @@
-use std::sync::Arc;
-
-use reqwest::{Client, Response};
+use reqwest::Response;
 use thiserror::Error;
 
-use crate::webdynpro::client::{SapSsrClient, SapSsrClientError};
+use crate::{
+    session::USaintSession,
+    webdynpro::client::{SapSsrClient, SapSsrClientError},
+};
 
 pub mod course_grades;
 pub mod course_schedules;
@@ -17,16 +18,16 @@ pub enum ApplicationError {
 }
 
 pub struct Application {
-    client: Arc<Client>,
+    session: USaintSession,
     sap_ssr_client: SapSsrClient,
 }
 
 impl Application {
     // SAP SSR Client 정보 획득
-    pub async fn new(client: Arc<Client>, app_name: &str) -> Result<Self, ApplicationError> {
-        let sap_ssr_client = SapSsrClient::new(client.clone(), app_name).await?;
+    pub async fn new(session: USaintSession, app_name: &str) -> Result<Self, ApplicationError> {
+        let sap_ssr_client = SapSsrClient::new(session.clone(), app_name).await?;
         Ok(Application {
-            client,
+            session,
             sap_ssr_client,
         })
     }
@@ -57,7 +58,7 @@ impl Application {
             form_data.push(("SAPEVENTQUEUE", event_queue));
         }
 
-        let response = self.client.post(&url).form(&form_data).send().await?;
+        let response = self.session.post(&url).form(&form_data).send().await?;
 
         Ok(response)
     }

@@ -1,15 +1,14 @@
-[package]
-name = "mini-rusaint"
-version = "0.1.0"
-edition = "2021"
-license = "mini-rusaint"
-authors = ["JOONGGON LEE <2wndrhs@gmail.com>"]
+[workspace]
+members = ["packages/mini-rusaint"]
+resolver = "2"
 
-[dependencies]
-tokio = { version = "1", features = ["full"] }
-reqwest = { version = "0.12", features = ["cookies", "json"] }
-derive_builder = "0.20.2"
-regex = "1.11.1"
-dotenv = "0.15.0"
-thiserror = "2.0.9"
-scraper = "0.22.0"
+[workspace.package]
+version = "0.1.0"
+
+authors = ["JOONGGON LEE <2wndrhs@gmail.com>"]
+edition = "2021"
+license = "MIT"
+readme = "README.md"
+
+[workspace.dependencies]
+uniffi = "0.28"
