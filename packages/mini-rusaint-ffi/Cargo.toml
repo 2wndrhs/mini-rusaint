@@ -6,7 +6,8 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-uniffi = { workspace = true }
+uniffi = { workspace = true, features = ["tokio"] }
+tokio = { workspace = true }
 thiserror = { workspace = true }
 mini-rusaint = { path = "../mini-rusaint" }
 
