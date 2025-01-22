@@ -16,3 +16,4 @@ readme = "README.md"
 
 [workspace.dependencies]
 uniffi = "0.28"
+thiserror = "2.0.11"
