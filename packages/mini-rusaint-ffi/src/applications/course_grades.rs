@@ -12,7 +12,7 @@ pub enum CourseGradesApplicationError {
     OriginalCourseGradesApplicationError(#[from] mini_rusaint::CourseGradesApplicationError),
 }
 
-#[uniffi::export]
+#[uniffi::export(async_runtime = "tokio")]
 impl CourseGradesApplication {
     #[uniffi::constructor]
     pub async fn new(
@@ -24,5 +24,13 @@ impl CourseGradesApplication {
         .await?;
 
         Ok(CourseGradesApplication(application))
+    }
+
+    /// 모든 학기별 성적을 가져옵니다.
+    pub async fn get_all_semester_grades(
+        &self,
+    ) -> Result<Vec<mini_rusaint::SemesterGrade>, CourseGradesApplicationError> {
+        let all_semester_grades = self.0.get_all_semester_grades().await?;
+        Ok(all_semester_grades)
     }
 }

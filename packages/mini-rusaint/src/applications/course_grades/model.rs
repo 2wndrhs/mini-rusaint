@@ -1,7 +1,12 @@
 use std::collections::HashMap;
 
+#[derive(Debug, uniffi::Record)]
+pub struct Rank {
+    pub current: u32,
+    pub total: u32,
+}
 // 학기별 성적
-#[derive(Debug)]
+#[derive(Debug, uniffi::Record)]
 pub struct SemesterGrade {
     pub year: u32,                 // 학년도
     pub semester: String,          // 학기
@@ -11,8 +16,8 @@ pub struct SemesterGrade {
     pub grade_points_average: f32, // 평점평균
     pub grade_points_sum: f32,     // 평점계
     pub arithmetic_mean: f32,      // 산술평균
-    pub semester_rank: (u32, u32), // 학기별석차
-    pub general_rank: (u32, u32),  // 전체석차
+    pub semester_rank: Rank,       // 학기별석차
+    pub general_rank: Rank,        // 전체석차
     pub academic_probation: bool,  // 학사경고
     pub consult: bool,             // 상담여부
     pub flunked: bool,             // 유급
@@ -49,17 +54,17 @@ impl SemesterGrade {
 
         let semester_rank_text = td_elements[8].text().collect::<String>();
         let semester_rank_parts: Vec<&str> = semester_rank_text.trim().split('/').collect();
-        let semester_rank = (
-            semester_rank_parts[0].parse().unwrap(),
-            semester_rank_parts[1].parse().unwrap(),
-        );
+        let semester_rank = Rank {
+            current: semester_rank_parts[0].parse().unwrap(),
+            total: semester_rank_parts[1].parse().unwrap(),
+        };
 
         let general_rank_text = td_elements[9].text().collect::<String>();
         let general_rank_parts: Vec<&str> = general_rank_text.trim().split('/').collect();
-        let general_rank = (
-            general_rank_parts[0].parse().unwrap(),
-            general_rank_parts[1].parse().unwrap(),
-        );
+        let general_rank = Rank {
+            current: general_rank_parts[0].parse().unwrap(),
+            total: general_rank_parts[1].parse().unwrap(),
+        };
 
         let academic_probation = td_elements[10].text().collect::<String>().trim() == "Y";
         let consult = td_elements[11].text().collect::<String>().trim() == "Y";
